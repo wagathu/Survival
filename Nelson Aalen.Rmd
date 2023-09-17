@@ -1,0 +1,50 @@
+---
+title: "Nelson Aaelen Estimator in r"
+author: "B.M Njuguna"
+date: "2022-07-03"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+```
+
+# Nelson Aaelen Estimate
+
+An alternative estimate of the survivor function is known as **Nelson Aalen Estimate**.
+
+in r we use the **nelsonaaelen** function from the **mice** package to calculate the estimates as follows;
+
+```{r}
+#Entering the data
+require(mice)
+times=c(6,6,6,6,7,9,10,10,11,13,16,17,19,20,22,23,25,32,32,34,35)
+status<-c(1,1,1,0,1,0,1,0,0,1,1,0,0,0,1,1,0,0,0,0,0)
+
+state<-factor(status,levels =c(0,1),labels=c("censored","UnCensored"))
+
+leukemiaPatients <- data.frame(times, status, state)
+
+estimate <- nelsonaalen(data = leukemiaPatients, timevar = times, statusvar = status)
+estimate
+```
+
+You can also view the estimate of different times as follows;
+
+```{r}
+leukemiaPatientsEsimates <- data.frame(times, status, state, estimate, exp(-(estimate)))
+
+colnames(leukemiaPatientsEsimates) <- c("times", "status", "state", "Nelson Aalen Estimate(Hazard Estimate)", "Survivor Estimate")
+leukemiaPatientsEsimates
+
+```
+
+The Hazard plot is as follows;
+
+```{r}
+require(ggplot2)
+plot(estimate,type="l",cex=.5,col = "red",xlab = "times",ylab = "Survival Estimate",ylim = c(0.0,1.0))
+```
+
