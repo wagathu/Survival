@@ -1,0 +1,35 @@
+---
+title: "Estimating the Hazard Rate and effect of associated factors on Infant Mortality in Kenya Using Demographic Health Survey Data"
+---
+
+## Objectives
+
+## General
+
+The general objective of the study is to estimate the hazard rate of Infants in Kenya.
+
+## Specific Objectives
+
+To achieve this general objective, the study aims to accomplish the following specific objectives:
+
+1.  Estimating the hazard rate of the infants through the parametric and non-parametric methods.
+2.  Estimating and comparing the hazard rate of the infants in different groups
+3.  Fitting a Cox-proportional hazard model
+
+## Methods
+
+The data will be obtained from the Demographic Health Survey conducted in Kenya in 2022. The sample size will entail all the children born 5 years preceding the survey.
+
+## Parametric Methods
+
+A suitable theoretical distribution will be fitted and the hazard function of the distribution will be used to estimate the hazard rate.
+
+The median lifetime of the infants will be obtained from the fitted distrbution
+
+## Non-Parametric Method
+
+Kaplan Mier and Nelson Aalen will also be used to estimate the hazard rate.
+
+## Cox-Propotional Hazard Model
+
+The cox-ph model will be used to estimate the hazard rate/ratios at different levels/groups of the selected covariates. 

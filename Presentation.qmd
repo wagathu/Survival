@@ -1,0 +1,17 @@
+---
+title: "Estimating the Hazard Rate and effect of associated factors on Infant Mortality in Kenya Using Demographic Health Survey Data"
+format: revealjs
+editor: visual
+---
+
+## General Objective
+
+The general objective of the study is to estimate the hazard function of Infants in Kenya.
+
+## Specific Objectives
+
+To achieve this general objective, the study aims to accomplish the following specific objectives:
+
+1.  Estimating the hazard rate of the infants through the parametric and non-parametric methods.
+2.  Estimating and comparing the hazard rate of the infants in different groups
+3.  Fitting a Cox-proportional hazard model
