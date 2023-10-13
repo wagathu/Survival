@@ -159,26 +159,23 @@ cdc_function <- function(cdc) {
 
 # Selecting Infants -------------------------------------------------------
 
-# df2 <- df |>
-#   mutate(surv_time2  = v008a - b18) |> 
-#   mutate(
-#     surv_time = case_when(
-#       substr(b6, 1, 1) == "1" ~ substr(b6, nchar(b6) - 1, nchar(b6)),
-#       as.numeric(b7) == 1 ~ "30",
-#       is.na(b7) ~ "40",
-#       TRUE ~ as.character(as.numeric(b7) * 30)
-#     ),
-#     surv_time = as.numeric(surv_time)
-#   ) |>
-#   mutate(status = ifelse(b5 == 1, 0, 1)) # 1-dead, 0-censored
-
-
 df <- df |>
   mutate(
-    surv_time = ifelse(substr(b6, 1, 1) == "1", substr(b6, nchar(b6) - 1, nchar(b6)), 31),
+    surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 30),
     surv_time = as.numeric(surv_time)
   ) |>
   mutate(status = ifelse(!is.na(b7) & b7 < 1, 1, 0))
+
+# df <- df |>
+#   mutate(
+#     surv_time = case_when(!is.na(b6) ~ substr(b6, nchar(b6) - 1, nchar(b6)) |>  as.numeric(),
+#                           is.na(b6) ~ b8 * 30
+#                           ),
+#     surv_time = as.numeric(surv_time)
+#   ) |>
+#   mutate(status = ifelse(surv_time < 30, 1, 0))
+  # mutate(status = ifelse(!is.na(b7) & b7 < 1, 1, 0))
+
 
 # Note: the Surv() function in the {survival} package
 # accepts by default TRUE/FALSE, where TRUE is event
@@ -188,18 +185,24 @@ df <- df |>
 
 # Survival Time --------------------------------------------------------------------
 
+# In calculating the survival time, I will obtain the survival time
+# from the variable b6 (107, implying reported in days). So any child 
+# who does not die within the first 30 days, the child will be censored,
+# and the survival time will be the full 30 days. That means, if it is
+# NA, then I fill it with 30 days. The status will be, if the number of 
+# days is less than 30, then the event of interest has occurred else no.
+
+
 df |> 
     ggplot() +
     geom_density(aes(x = surv_time))
 
-  df_time <- df |>
-  #filter(surv_time <= 30) |>
-  as_factor()
+df_time <- df |>
+  as_factor() 
 
 ## Density Plot
 df_time |>
   filter(status == 1) |>
-  #dplyr::filter(!is.na(b7)) |>
   ggplot2::ggplot(aes(x = as.numeric(surv_time))) +
   ggplot2::geom_density(linewidth = .78) +
   theme_bw() +
@@ -214,7 +217,7 @@ df_time |>
 # Hazard Rate -------------------------------------------------------------
 # 1. Kaplan Mier
 #surv_obj <- Surv(df$surv_time, df$status)
-km_fit <- survfit(Surv(surv_time, status == 1) ~ 1, df_time)
+km_fit <- survfit(Surv(surv_time, status) ~ 1, df_time)
 summary(km_fit)
 
 survfit2(Surv(surv_time, status == 1) ~ 1, data = df_time) %>%
@@ -248,14 +251,6 @@ CR |>
   geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.2) +
   theme_classic() +
   coord_flip()
-
-##### Survival time
-data2 <- data |> 
-  mutate(as_nn = ifelse(!is.na(b7) & b7 < 1, "yes", "no")) |> 
-  # select(b5, b7, as_nn)
-  mutate(b7 = ifelse(is.na(b7), b8, b7)) |> 
-  mutate(status = as_nn) |> 
-  select(as_nn, b7, b8)
 
 
 
