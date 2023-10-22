@@ -40,6 +40,8 @@ clean_data <- function(data) {
       # Date of interview (CMC)
       v008a,
       # Date of Interview (CDC)
+      v010,
+      # Respondent's year of birth
       v012,
       # Respondent's current age
       v013,
@@ -80,6 +82,8 @@ clean_data <- function(data) {
       # Place of delivery
       m17,
       # Delivery by cesarean section
+      v140,
+      # Place of birth (rural/urban)
       b18,
       #Century Day Code of birth (CDC)
       m19,
@@ -164,7 +168,7 @@ df <- df |>
     surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 30),
     surv_time = as.numeric(surv_time)
   ) |>
-  mutate(status = ifelse(!is.na(b7) & b7 < 1, 1, 0))
+  mutate(status = ifelse(surv_time <= 28, 1, 0))
 
 # df <- df |>
 #   mutate(
@@ -220,7 +224,9 @@ df_time |>
 km_fit <- survfit(Surv(surv_time, status) ~ 1, df_time)
 summary(km_fit)
 
-survfit2(Surv(surv_time, status == 1) ~ 1, data = df_time) %>%
+survfit2(Surv(surv_time, status == 1) ~ 1, data = df_time)
+
+km_fit |> 
   ggsurvfit() +
   labs(x = "Days",
        y = "Overall survival probability")
@@ -230,6 +236,7 @@ autoplot(km_fit) +
 
 cumhaz = km_fit$cumhaz
 ggsurvplot(km_fit)
+  
 
 # Cumulative hazard rate --------------------------------------------------
 
@@ -252,5 +259,64 @@ CR |>
   theme_classic() +
   coord_flip()
 
+# Survival Rate according to different groups -----------------------------
 
+# 1. Gender
+gender_fit <- survfit(Surv(surv_time, status) ~ (b4), df_time) |> 
+  ggsurvfit() +
+  ggtitle("Gender")
+
+# 2. Maternal Age
+df_time <- df_time |>
+  mutate(
+    age_at_birth = b2 - v010,
+    age_group_birth = case_when(
+    age_at_birth >= 15 & age_at_birth <= 19 ~ "15-19",
+    age_at_birth >= 20 & age_at_birth <= 24 ~ "20-24",
+    age_at_birth >= 25 & age_at_birth <= 29 ~ "25-29",
+    age_at_birth >= 30 & age_at_birth <= 34 ~ "30-34",
+    age_at_birth >= 35 & age_at_birth <= 39 ~ "35-39",
+    age_at_birth >= 40 & age_at_birth <= 44 ~ "40-44",
+    age_at_birth >= 45 & age_at_birth <= 49 ~ "45-49",
+    TRUE ~ "50 and above"  # For cases outside specified ranges
+  ))
+
+maternal_age_fit <- survfit(Surv(surv_time, status) ~ (age_group_birth), df_time) |> 
+  ggsurvfit() +
+  ggtitle("Maternal Age")
+
+# 3. Place of Delivery
+df_time <- df_time |> 
+  filter(v140 != "not a dejure resident")
+
+pob_fit <- survfit(Surv(surv_time, status) ~ (v140), df_time |> 
+                     filter(v140 != "not a dejure resident")
+                     ) |> 
+  ggsurvfit() +
+  ggtitle("Place of Delivery")
+
+# 4. Level of Education of the Mother
+df_time <- df_time |> 
+  mutate(level = case_when(
+    v106 %in% c("no education", "no education/preschool") ~ "no education",
+    v106 == "primary" ~ "primary",
+    v106 == "secondary" ~ "secondary",
+    v106 == "higher" ~ "More than secondary",
+    TRUE ~ NA
+    
+  ))
+
+level_fit <- survfit(Surv(surv_time, status) ~ (level), df_time) |> 
+  ggsurvfit() +
+  ggtitle("Level of Education of the Mother")
+
+# 5. Delivery by Caeserian Section
+cs_fit <- survfit(Surv(surv_time, status) ~ (m17), df_time) |> 
+  ggsurvfit() +
+  ggtitle("Delivery by CS")
+
+# Coxph Model -------------------------------------------------------------
+
+cox_model <-
+  coxph(Surv(surv_time, status) ~ b4 + factor(age_group_birth) + v140 + level + m17 , data = df_time)
 
