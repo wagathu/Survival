@@ -115,7 +115,7 @@ df <- clean_data(data)
 
 df <- df |>
   mutate(duration = v007 - b2) |>
-  filter(duration <= 5) 
+  filter(duration <= 3) 
 
 
 # Calculating Survival time in days ---------------------------------------
@@ -163,12 +163,30 @@ cdc_function <- function(cdc) {
 
 # Selecting Infants -------------------------------------------------------
 
-df <- df |>
+
+df_1 <- df |>
   mutate(
-    surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 30),
+    birth_ym = ymd(paste0(b2, '-', b1, '-01')),
+    interview_ym = ymd(paste(v007, v006, "01", sep = "-")),
+    surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 9999),
     surv_time = as.numeric(surv_time)
   ) |>
-  mutate(status = ifelse(surv_time <= 28, 1, 0))
+  mutate(surv_time = case_when(
+    surv_time == 9999 & b7 != 0 ~ b7 * 30,
+    surv_time == 9999 & is.na(b7) ~ (as.numeric(interview_ym - birth_ym)),
+    TRUE ~ as.numeric(surv_time)
+  )) |> 
+  mutate(status = ifelse(surv_time <= 28 & !is.na(b7), 1, 0))
+  
+
+
+
+# df <- df |>
+#   mutate(
+#     surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 30),
+#     surv_time = as.numeric(surv_time)
+#   ) |>
+#   mutate(status = ifelse(surv_time <= 28, 1, 0))
 
 # df <- df |>
 #   mutate(
@@ -197,11 +215,11 @@ df <- df |>
 # days is less than 30, then the event of interest has occurred else no.
 
 
-df |> 
+df_1 |> 
     ggplot() +
     geom_density(aes(x = surv_time))
 
-df_time <- df |>
+df_time <- df_1 |>
   as_factor() 
 
 ## Density Plot
@@ -319,4 +337,4 @@ cs_fit <- survfit(Surv(surv_time, status) ~ (m17), df_time) |>
 
 cox_model <-
   coxph(Surv(surv_time, status) ~ b4 + factor(age_group_birth) + v140 + level + m17 , data = df_time)
-
+summary(cox_model)
