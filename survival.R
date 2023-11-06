@@ -111,11 +111,11 @@ clean_data <- function(data) {
 df <- clean_data(data)
 #haven::as_factor()
 
-# 5 years before the survey -----------------------------------------------
+# 3 years before the survey -----------------------------------------------
 
 df <- df |>
   mutate(duration = v007 - b2) |>
-  filter(duration <= 3) 
+  filter(duration <= 5) 
 
 
 # Calculating Survival time in days ---------------------------------------
@@ -164,21 +164,29 @@ cdc_function <- function(cdc) {
 # Selecting Infants -------------------------------------------------------
 
 
-df_1 <- df |>
-  mutate(
-    birth_ym = ymd(paste0(b2, '-', b1, '-01')),
-    interview_ym = ymd(paste(v007, v006, "01", sep = "-")),
-    surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 9999),
-    surv_time = as.numeric(surv_time)
-  ) |>
-  mutate(surv_time = case_when(
-    surv_time == 9999 & b7 != 0 ~ b7 * 30,
-    surv_time == 9999 & is.na(b7) ~ (as.numeric(interview_ym - birth_ym)),
-    TRUE ~ as.numeric(surv_time)
-  )) |> 
-  mutate(status = ifelse(surv_time <= 28 & !is.na(b7), 1, 0))
-  
+# df_1 <- df |>
+#   mutate(
+#     birth_ym = ymd(paste0(b2, '-', b1, '-01')),
+#     interview_ym = ymd(paste(v007, v006, "01", sep = "-")),
+#     surv_time = ifelse(substr(b6, 1, 1) == "1" & !is.na(b6), substr(b6, nchar(b6) - 1, nchar(b6)), 9999),
+#     surv_time = as.numeric(surv_time)
+#   ) |>
+#   mutate(surv_time = case_when(
+#     surv_time == 9999 & b7 != 0 ~ b7 * 30,
+#     surv_time == 9999 & is.na(b7) ~ (as.numeric(interview_ym - birth_ym)),
+#     TRUE ~ as.numeric(surv_time)
+#   )) |> 
+#   mutate(status = ifelse(surv_time <= 28 & !is.na(b7), 1, 0))
+#   
 
+max(df$b7, na.rm = T)
+df_1 <- df |> 
+  mutate(status = ifelse(!is.na(b7), 1, 0),
+         surv_time = case_when(
+           status == 1 ~ b7,
+           status == 0 ~ b8
+         )
+         )
 
 
 # df <- df |>
@@ -338,3 +346,4 @@ cs_fit <- survfit(Surv(surv_time, status) ~ (m17), df_time) |>
 cox_model <-
   coxph(Surv(surv_time, status) ~ b4 + factor(age_group_birth) + v140 + level + m17 , data = df_time)
 summary(cox_model)
+
