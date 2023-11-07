@@ -76,6 +76,8 @@ clean_data <- function(data) {
       # Child lives with whom,
       b11 ,
       # birth interval
+      b19,
+      # current age of child in months (months since birth for dead children)
       b20,
       # Duration of pregnancy in months
       m15,
@@ -114,10 +116,19 @@ df <- clean_data(data)
 # 3 years before the survey -----------------------------------------------
 
 df <- df |>
+  mutate(
+    duration = (v008 - b3)) |> 
+  filter(duration <= 60) 
+max(df$duration)
+nrow(df)
+
+
+
+df <- df |>
   mutate(duration = v007 - b2) |>
-  filter(duration <= 5) 
-
-
+  filter(duration < 5) 
+nrow(df)
+max()
 # Calculating Survival time in days ---------------------------------------
 
 cdc_function <- function(cdc) {
@@ -184,7 +195,7 @@ df_1 <- df |>
   mutate(status = ifelse(!is.na(b7), 1, 0),
          surv_time = case_when(
            status == 1 ~ b7,
-           status == 0 ~ b8
+           status == 0 ~ b19
          )
          )
 
@@ -261,6 +272,7 @@ autoplot(km_fit) +
   theme_classic()
 
 cumhaz = km_fit$cumhaz
+
 ggsurvplot(km_fit)
   
 
@@ -315,8 +327,9 @@ maternal_age_fit <- survfit(Surv(surv_time, status) ~ (age_group_birth), df_time
 df_time <- df_time |> 
   filter(v140 != "not a dejure resident")
 
-pob_fit <- survfit(Surv(surv_time, status) ~ (v140), df_time |> 
-                     filter(v140 != "not a dejure resident")
+unique(df_time$v140)
+
+pob_fit <- survfit(Surv(surv_time, status) ~ (v140), df_time 
                      ) |> 
   ggsurvfit() +
   ggtitle("Place of Delivery")
@@ -330,7 +343,9 @@ df_time <- df_time |>
     v106 == "higher" ~ "More than secondary",
     TRUE ~ NA
     
-  ))
+  ),
+  level = ifelse(level == "no education", "No Education", "Educated")
+  )
 
 level_fit <- survfit(Surv(surv_time, status) ~ (level), df_time) |> 
   ggsurvfit() +
@@ -347,3 +362,4 @@ cox_model <-
   coxph(Surv(surv_time, status) ~ b4 + factor(age_group_birth) + v140 + level + m17 , data = df_time)
 summary(cox_model)
 
+table(df_time$v140)
